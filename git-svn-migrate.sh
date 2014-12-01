@@ -180,6 +180,11 @@ do
   # Check for 2-field format:  Name [tab] URL
   name=`echo $line | awk '{print $1}'`;
   url=`echo $line | awk '{print $2}'`;
+
+  #enhancement by Shan Ul Haq. added a third parameter to have git remote repository
+  # formate : Name [tab] SVN URL [tab] GIT url
+  git_remote=`echo $line | awk '{print $3}'`;
+
   # Check for simple 1-field format:  URL
   if [[ $url == '' ]]; then
     url=$name;
@@ -241,5 +246,12 @@ do
     git branch -D "tags/$ref";
   done
 
+  #this is the enhancements done by Shan Ul Haq. Following code will read the remote provided in the URL list
+  #and will add as origin in the said repository and will push with mirror options
+  git remote add origin $git_remote
+
+  #push whole repository with mirror option
+  git push --mirror origin
+  
   echo "- Conversion completed at $(date)." >&2;
 done < $url_file

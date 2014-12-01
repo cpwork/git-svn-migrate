@@ -185,6 +185,16 @@ do
   # formate : Name [tab] SVN URL [tab] GIT url
   git_remote=`echo $line | awk '{print $3}'`;
 
+  #non-standard layout for the svn repository. if this is available then use it. otherwise use standard layout.
+  #provide the non-standar layout as 4th parameter in this format: "Branches|Tags|Trunk"
+  non_standard_layout=`echo $line | awk '{print $4}'`;
+  set -- "$non_standard_layout" 
+  IFS="|"; declare -a Array=($*) 
+  layout_branches="${Array[0]}" 
+  layout_tags="${Array[1]}"
+  layout_trunk="${Array[2]}"
+
+
   # Check for simple 1-field format:  URL
   if [[ $url == '' ]]; then
     url=$name;
@@ -204,7 +214,13 @@ do
   # Clone the original Subversion repository to a temp repository.
   cd $pwd;
   echo "- Cloning repository..." >&2;
-  git svn clone $url -A $authors_file --authors-prog=$dir/svn-lookup-author.sh --stdlayout --quiet $gitsvn_params $tmp_destination;
+
+  #if standard non-standard svn repo layout parameters are provided then use those, otherwise just use standard layout parameters
+  if [[ $non_standard_layout == '' ]]; then
+    git svn clone $url -A $authors_file --authors-prog=$dir/svn-lookup-author.sh --stdlayout --quiet $gitsvn_params $tmp_destination;
+  else
+    git svn clone $url -A $authors_file --authors-prog=$dir/svn-lookup-author.sh --trunk=/$layout_trunk --branches=/$layout_branches --tags=/$layout_tags --quiet $gitsvn_params $tmp_destination;
+  fi  
 
   # Create .gitignore file.
   echo "- Converting svn:ignore properties into a .gitignore file..." >&2;

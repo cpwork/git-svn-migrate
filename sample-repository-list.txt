@@ -1,2 +1,3 @@
-awesome-project svn://svn.mysvn.com/AwesomeProject https://git.mygit.com/AwesomeProject.git
-another-awesome-project svn://svn.mysvn.com/AnotherAwesomeProject https://git.mygit.com/AnotherAwesomeProject.git
+awesome-project	svn://svn.mysvn.com/AwesomeProject	https://git.mygit.com/AwesomeProject.git
+another-awesome-project	svn://svn.mysvn.com/AnotherAwesomeProject	https://git.mygit.com/AnotherAwesomeProject.git
+very_old_project	svn://svn.mysvn.com/VeryOldProject	https://git.mygit.com/VeryOldProject.git	MyBranches|MyTags|MyTrunk

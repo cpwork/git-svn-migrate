@@ -1,6 +1,18 @@
 ABOUT git-svn-migrate
 ---------------------
 
+This is a fork/update of the scripts originally created by John Albin.
+This is mostly just an aggregation of the fixes by others on github.
+
+
+---------------------
+BlueWombat's additions:
+---------------------
+This fork is based on the scripts by John Albin.
+The original broke when run in MINGW/Git BASH on WIndows.
+This version includes some minor tweaks, that'll make it work flawlessly on Windows.
+---------------------
+
 The git-svn-migrate project is a set of helper scripts to ease the migration of
 Subversion repositories to Git.
 

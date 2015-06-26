@@ -174,7 +174,7 @@ fi
 
 # Process each URL in the repository list.
 pwd=`pwd`;
-tmp_destination="$pwd/tmp-git-repo";
+tmp_destination="`mktemp --directory --dry-run $pwd/tmp-git-repoXXXXXXXX`";
 mkdir -p "$destination";
 destination=`cd "$destination"; pwd`; #Absolute path.
 

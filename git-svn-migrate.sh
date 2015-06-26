@@ -224,6 +224,21 @@ do
   # Check for 2-field format:  Name [tab] URL
   name=`echo $line | awk '{print $1}'`;
   url=`echo $line | awk '{print $2}'`;
+
+  #enhancement by Shan Ul Haq. added a third parameter to have git remote repository
+  # formate : Name [tab] SVN URL [tab] GIT url
+  git_remote=`echo $line | awk '{print $3}'`;
+
+  #non-standard layout for the svn repository. if this is available then use it. otherwise use standard layout.
+  #provide the non-standar layout as 4th parameter in this format: "Branches|Tags|Trunk"
+  non_standard_layout=`echo $line | awk '{print $4}'`;
+  set -- "$non_standard_layout" 
+  IFS="|"; declare -a Array=($*) 
+  layout_branches="${Array[0]}" 
+  layout_tags="${Array[1]}"
+  layout_trunk="${Array[2]}"
+
+
   # Check for simple 1-field format:  URL
   if [[ $url == '' ]]; then
     url=$name;
@@ -246,8 +261,13 @@ do
   echo "- Cloning repository..." >&2;
   git_svn_clone="git svn clone \"$url\" -A \"$authors_file\" --authors-prog=\"$dir/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=".gitkeep"";
 
-  if [[ -z $no_stdlayout ]]; then
-    git_svn_clone="$git_svn_clone --stdlayout";
+  if [[ $non_standard_layout == '' ]]; then
+  	if [[ -z $no_stdlayout ]]; then
+    	git_svn_clone="$git_svn_clone --stdlayout";
+  	fi
+  else
+  	#if non-standard svn repo layout parameters are provided, then use those
+  	git_svn_clone="$git_svn_clone --trunk=/$layout_trunk --branches=/$layout_branches --tags=/$layout_tags";
   fi
 
   git_svn_clone="$git_svn_clone --quiet $gitsvn_params $tmp_destination";
@@ -295,5 +315,16 @@ do
     git branch -D "tags/$ref";
   done
 
+  #this is the enhancements done by Shan Ul Haq. Following code will read the remote provided in the URL list
+  #and will add as origin in the said repository and will push with mirror options
+  #UPDATE: only preform this action if a remote is listed in the file
+  if [[ $git_remote == '' ]]; then
+  else
+    git remote add origin $git_remote
+
+    #push whole repository with mirror option
+    git push --mirror origin
+  fi
+  
   echo "- Conversion completed at $(date)." >&2;
 done < "$url_file"

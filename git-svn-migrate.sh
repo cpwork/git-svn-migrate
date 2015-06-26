@@ -207,7 +207,7 @@ do
   # Clone the original Subversion repository to a temp repository.
   cd "$pwd";
   echo "- Cloning repository..." >&2;
-  git_svn_clone="git svn clone \"$url\" -A \"$authors_file\" --authors-prog=\"$dir/svn-lookup-author.sh\"";
+  git_svn_clone="git svn clone \"$url\" -A \"$authors_file\" --authors-prog=\"$dir/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=".gitkeep"";
 
   if [[ -z $no_stdlayout ]]; then
     git_svn_clone="$git_svn_clone --stdlayout";

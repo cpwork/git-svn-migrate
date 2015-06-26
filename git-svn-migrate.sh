@@ -45,6 +45,19 @@ NAME
 \n\t--ignore-file=<filename>, --ignore-file <filename>
 \n\t\tThe location of a .gitignore file to add to all repositories.
 \n
+\n\t-T=<trunk_subdir>, -T <trunk_subdir>
+\n\t--trunk=<trunk_subdir>, --trunk <trunk_subdir>
+\n\t-t=<tags_subdir>, -t <tags_subdir>
+\n\t--tags=<tags_subdir>, --tags <tags_subdir>
+\n\t-b=<branches_subdir>, -b <branches_subdir>
+\n\t--branches=<branches_subdir>, --branches <branches_subdir>
+\n\t\tThese are optional command-line options for init.
+\n\t\tgit svn --help for more info.
+\n
+\n\t--no-minimize-url
+\n\t\tPass the "--no-minimize-url" parameter to git-svn. See
+\n\t\tgit svn --help for more info.
+\n
 \n\t--quiet
 \n\t\tBy default this script is rather verbose since it outputs each revision
 \n\t\tnumber as it is processed from Subversion. Since conversion can sometimes
@@ -55,8 +68,13 @@ NAME
 \n\t\tBy default, all converted log messages will include a line starting with
 \n\t\t"git-svn-id:" which makes it easy to track down old references to
 \n\t\tSubversion revision numbers in existing documentation, bug reports and
-\n\t\tarchives. Use this option to get rid of that data. See git svn --help for
-\n\t\ta fuller discussion on this option.
+\n\t\tarchives. Use this option to get rid of that data.
+\n\t\tThis option is NOT recommended as it makes it difficult to
+\n\t\ttrack down old references to SVN revision numbers in existing
+\n\t\tdocumentation, bug reports and archives. If you plan to
+\n\t\teventually migrate from SVN to git and are certain about
+\n\t\tdropping SVN history, consider git-filter-branch(1) instead.
+\n\t\tSee git svn --help for a fuller discussion on this option.
 \n
 \n\t--no-stdlayout
 \n\t\tBy default, $script passes the --stdlayout option to
@@ -71,6 +89,14 @@ NAME
 \n\talong to that utility directly. Some useful git-svn options are:
 \n\t\t--trunk --tags --branches --no-minimize-url
 \n\tSee git svn --help for more info about its options.
+\n
+=============
+
+\n\t--use-svm-props
+\n\t\tSee git svn --help for more info.
+\n
+\n\t--use-svnsync-props
+\n\t\tSee git svn --help for more info.
 \n
 \nBASIC EXAMPLES
 \n\t# Use the long parameter names
@@ -121,15 +147,25 @@ until [[ -z "$1" ]]; do
   fi
 
   case $parameter in
-    u )               url_file=$value;;
-    url-file )        url_file=$value;;
-    a )               authors_file=$value;;
-    authors-file )    authors_file=$value;;
-    d )               destination=$value;;
-    destination )     destination=$value;;
-    i )               ignore_file=$value;;
-    ignore-file )     ignore_file=$value;;
-    no-stdlayout )    no_stdlayout="true";;
+    u )                url_file=$value;;
+    url-file )         url_file=$value;;
+    a )                authors_file=$value;;
+    authors-file )     authors_file=$value;;
+    d )                destination=$value;;
+    destination )      destination=$value;;
+    i )                ignore_file=$value;;
+    ignore-file )      ignore_file=$value;;
+    T )                gitsvn_params="$gitsvn_params --trunk=$value";;
+    trunk )            gitsvn_params="$gitsvn_params --trunk=$value";;
+    t )                gitsvn_params="$gitsvn_params --tags=$value";;
+    tags )             gitsvn_params="$gitsvn_params --tags=$value";;
+    b )                gitsvn_params="$gitsvn_params --branches=$value";;
+    branches )         gitsvn_params="$gitsvn_params --branches=$value";;
+    no-minimize-url )  gitsvn_params="$gitsvn_params --no-minimize-url";;
+    no-metadata )      gitsvn_params="$gitsvn_params --no-metadata";;
+    use-svm-props )    gitsvn_params="$gitsvn_params --use-svm-props";;
+    use-svnsync-props) gitsvn_params="$gitsvn_params --use-svnsync-props";;
+    no-stdlayout )     no_stdlayout="true";;
     shared )          if [[ $value == '' ]]; then
                         gitinit_params="--shared";
                       else
@@ -197,6 +233,7 @@ do
   echo >&2;
   echo "At $(date)..." >&2;
   echo "Processing \"$name\" repository at $url..." >&2;
+  echo "Description: $name" >&2;
 
   # Init the final bare repository.
   mkdir "$destination/$name.git";

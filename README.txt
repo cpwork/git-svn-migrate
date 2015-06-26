@@ -14,7 +14,9 @@ This version includes some minor tweaks, that'll make it work flawlessly on Wind
 ---------------------
 
 The git-svn-migrate project is a set of helper scripts to ease the migration of
-Subversion repositories to Git.
+Subversion repositories to Git. This version differs from the original by John
+Albin Wilkins, because it does not default to omission of SVN metadata, though
+it retains that option in the allowed parameters.
 
 The basic steps to converting a list of Subversion repositories into Git
 repositories are the following:
@@ -100,6 +102,10 @@ options it accepts.
 Example:
 
   $ ./git-svn-migrate.sh --url-file=repository-list.txt --authors-file=author-transform.txt /var/git
+
+The default configuration expects a format of directories trunk, branches, and
+tags in the base of each SVN location. To override the standard layout, you
+can define the trunk, branches, and tags locations.
 
 You can run "./git-svn-migrate.sh --help" to get full documentation on the
 options it accepts.

@@ -318,8 +318,7 @@ do
   #this is the enhancements done by Shan Ul Haq. Following code will read the remote provided in the URL list
   #and will add as origin in the said repository and will push with mirror options
   #UPDATE: only preform this action if a remote is listed in the file
-  if [[ $git_remote == '' ]]; then
-  else
+  if [[ $git_remote != '' ]]; then
     git remote add origin $git_remote
 
     #push whole repository with mirror option

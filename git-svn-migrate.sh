@@ -15,6 +15,7 @@ destination='.';
 ignore_file='';
 gitinit_params='';
 gitsvn_params='';
+no_stdlayout='';
 
 
 function pause()
@@ -33,7 +34,7 @@ function svn-lookup-author()
 function print_usage()
 {
     echo "
-    USAGE: $script --url-file=<filename> --authors-file=<filename> [destination folder]
+    USAGE: $script $script --url-file=my-repository-list.txt --authors-file=authors-file.txt [--destination=/var/git]
 
     For more info, see: $script --help
 "
@@ -111,9 +112,8 @@ DESCRIPTION
         See git svn --help for more info.
 
 
-        Any additional options are assumed to be git-svn options
-        and will be passed along to that utility directly.
-        See git svn --help for more info about its options.
+        Any additional options are ignored at this time. Feel free to
+        ipmrove this script and get this working again.
 
 
 
@@ -125,6 +125,11 @@ DESCRIPTION
     -b=<branches_subdir>, -t=<tags_subdir>, -T=<trunk_subdir>,
         Unable to find sufficient documentation to port these parameters
         to BASH's getopts.
+
+
+        Any additional options are assumed to be git-svn options
+        and will be passed along to that utility directly.
+        See git svn --help for more info about its options.
 
     ---------------------------------------------------------------------
     -------------------------------REMOVED-------------------------------
@@ -146,7 +151,6 @@ SEE ALSO
 
 function process_parameters()
 {
-    # Process parameters.
     local OPTIND=1; # Reset is necessary if getopts was used previously in the script.
     local opt;
 
@@ -159,6 +163,7 @@ function process_parameters()
             T)      gitsvn_params="${gitsvn_params} --trunk=${OPTARG}"
             t)      gitsvn_params="${gitsvn_params} --tags=${OPTARG}"
             b)      gitsvn_params="${gitsvn_params} --branches=${OPTARG}"
+            s)      no_stdlayout='';;
             h)      print_help; exit;;
 
             #Handle long style arguments
@@ -191,7 +196,7 @@ function process_parameters()
                     use-svnsync-props)  gitsvn_params="$gitsvn_params --use-svnsync-props";;
                     no-stdlayout)       no_stdlayout="true";;
 
-                    shared )            val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ));
+                    shared)             val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ));
                                         if [[ "${val}" == '' ]]; then
                                             gitinit_params="--shared";
                                         else
@@ -207,57 +212,57 @@ function process_parameters()
                                         fi
                                         ;;
 
-                    help )          print_help; exit;;
-                    usage )         print_usage; exit;;
+                    help)               print_help; exit;;
+                    usage)              print_usage; exit;;
 
-                    *)
-                        if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
-                            echo "Invalid option --${OPTARG}" >&2
-                        fi
+                    *) 
+                        # # Pass any unknown parameters to git-svn directly.
+                        # val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ));
+                        # if [[ ${val} == '' ]]; then
+                        #     gitsvn_params="${gitsvn_params} --${OPTARG}";
+                        # elif [[ ${#parameter} -gt 1 ]]; then
+                        #     gitsvn_params="${gitsvn_params} --${parameter}=${val}";
+                        # else
+                        #     gitsvn_params="${gitsvn_params} --${OPTARG} ${val}";
+                        # fi
                         ;;
                 esac;;
 
-            * ) # Pass any unknown parameters to git-svn directly.
-                if [[ $value == '' ]]; then
-                    gitsvn_params="$gitsvn_params $flag_delimiter$parameter";
-                elif [[ ${#parameter} -gt 1 ]]; then
-                    gitsvn_params="$gitsvn_params $flag_delimiter$parameter=$value";
-                else
-                    gitsvn_params="$gitsvn_params $flag_delimiter$parameter $value";
-                fi;;
+            *) 
+                # # Pass any unknown parameters to git-svn directly.
+                # val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ));
+                # if [[ ${val} == '' ]]; then
+                #     gitsvn_params="${gitsvn_params} --${opt}";
+                # elif [[ ${#parameter} -gt 1 ]]; then
+                #     gitsvn_params="${gitsvn_params} --${parameter}=${val}";
+                # else
+                #     gitsvn_params="${gitsvn_params} --${opt} ${val}";
+                # fi
+                ;;
 
             \?)     echo "Invalid option: -$OPTARG" >&2;;
         esac
     done
-
-    #maintain backward compatibility with option
-    #to set the destination without specifying a parameter
-    #NOTE: MUST BE FINAL PARAMETER
-    shift $(($OPTIND - 1))
-    printf "Remaining arguments are: %s\n" "$*"
-    if [[ "$*" != '' ]]; then
-        destination="$*";
-    fi
 }
-
-
 
 function validate_parameters()
 {
     # Check for required parameters.
-    if [[ $url_file == '' || $authors_file == '' ]]; then
-        echo -e $usage >&2;
+    if [[ "${url_file}" == '' || "${authors_file}" == '' ]]; then
+        print_usage;
         exit 1;
     fi
+
     # Check for valid files.
-    if [[ ! -f $url_file ]]; then
-        echo "Specified URL file \"$url_file\" does not exist or is not a file." >&2;
-        echo -e $usage >&2;
+    if [[ ! -f "${url_file}" ]]; then
+        echo "Specified URL file \"${url_file}\" does not exist or is not a file." >&2;
+        print_usage;
         exit 1;
     fi
-    if [[ ! -f $authors_file ]]; then
-        echo "Specified authors file \"$authors_file\" does not exist or is not a file." >&2;
-        echo -e $usage >&2;
+
+    if [[ ! -f "${authors_file}" ]]; then
+        echo "Specified authors file \"${authors_file}\" does not exist or is not a file." >&2;
+        print_usage;
         exit 1;
     fi
 }
@@ -266,15 +271,17 @@ function process_svn_repositories()
 {
     # Process each URL in the repository list.
     pwd=`pwd`;
-    tmp_destination="`mktemp --directory --dry-run $pwd/tmp-git-repoXXXXXXXX`";
-    mkdir -p "$destination";
-    destination=`cd "$destination"; pwd`; #Absolute path.
+    tmp_destination="`mktemp --directory --dry-run ${pwd}/tmp-git-repoXXXXXXXX`";
+    mkdir -p "${destination}";
+    destination=`cd "${destination}"; pwd`; #Absolute path.
 
     # Ensure temporary repository location is empty.
-    if [[ -e $tmp_destination ]]; then
-        echo "Temporary repository location \"$tmp_destination\" already exists. Exiting." >&2;
+    if [[ -e "${tmp_destination}" ]]; then
+        echo "Temporary repository location \"${tmp_destination}\" already exists. Exiting." >&2;
         exit 1;
     fi
+
+    mkdir -p "${tmp_destination}";
 
     sed -e 's/#.*//; /^[[:space:]]*$/d' $url_file | while read line
     do
@@ -283,59 +290,60 @@ function process_svn_repositories()
         url=`echo $line | awk '{print $2}'`;
 
         #enhancement by Shan Ul Haq. added a third parameter to have git remote repository
-        # formate : Name [tab] SVN URL [tab] GIT url
+        # format : Name [tab] SVN URL [tab] GIT url
         git_remote=`echo $line | awk '{print $3}'`;
 
         #non-standard layout for the svn repository. if this is available then use it. otherwise use standard layout.
         #provide the non-standar layout as 4th parameter in this format: "Branches|Tags|Trunk"
         non_standard_layout=`echo $line | awk '{print $4}'`;
-        set -- "$non_standard_layout" 
+        set -- "${non_standard_layout}" 
         IFS="|"; declare -a Array=($*) 
         layout_branches="${Array[0]}" 
         layout_tags="${Array[1]}"
         layout_trunk="${Array[2]}"
 
-
         # Check for simple 1-field format:  URL
         if [[ $url == '' ]]; then
-            url=$name;
+            url="${name}";
             name=`basename $url`;
         fi
+
+
         # Process each Subversion URL.
         echo >&2;
-        echo "At $(date)..." >&2;
-        echo "Processing \"$name\" repository at $url..." >&2;
-        echo "Description: $name" >&2;
+        echo "At ${date}..." >&2;
+        echo "Processing \"${name}\" repository at $url..." >&2;
+        echo "Description: ${name}" >&2;
 
         # Init the final bare repository.
-        mkdir "$destination/$name.git";
-        cd "$destination/$name.git";
-        git init --bare $gitinit_params;
+        mkdir "${destination}/${name}.git";
+        cd "${destination}/${name}.git";
+        git init --bare "${gitinit_params}";
         git symbolic-ref HEAD refs/heads/trunk;
 
         # Clone the original Subversion repository to a temp repository.
-        cd "$pwd";
+        cd "${pwd}";
         echo "- Cloning repository..." >&2;
-        git_svn_clone="git svn clone \"$url\" -A \"$authors_file\" --authors-prog=\"$dir/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=".gitkeep"";
+        git_svn_clone="git svn clone \"${url}\" -A \"${authors_file}\" --authors-prog=\"$dir/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=".gitkeep"";
 
         if [[ $non_standard_layout == '' ]]; then
         	if [[ -z $no_stdlayout ]]; then
-        	   git_svn_clone="$git_svn_clone --stdlayout";
+        	   git_svn_clone="${git_svn_clone} --stdlayout";
         	fi
         else
         	#if non-standard svn repo layout parameters are provided, then use those
-        	git_svn_clone="$git_svn_clone --trunk=/$layout_trunk --branches=/$layout_branches --tags=/$layout_tags";
+        	git_svn_clone="${git_svn_clone} --trunk=/${layout_trunk} --branches=/${layout_branches} --tags=/${layout_tags}";
         fi
 
-        git_svn_clone="$git_svn_clone --quiet $gitsvn_params $tmp_destination";
+        git_svn_clone="${git_svn_clone} --quiet ${gitsvn_params} ${tmp_destination}";
         $git_svn_clone;
 
         # Create .gitignore file.
         echo "- Converting svn:ignore properties into a .gitignore file..." >&2;
-        if [[ $ignore_file != '' ]]; then
-            cp "$ignore_file" "$tmp_destination/.gitignore";
+        if [[ "${ignore_file}" != '' ]]; then
+            cp "${ignore_file}" "${tmp_destination}/.gitignore";
         fi
-        cd "$tmp_destination";
+        cd "${tmp_destination}";
         git svn show-ignore --id trunk >> .gitignore;
         if [ -s .gitignore ]; then
             git add .gitignore;
@@ -344,13 +352,13 @@ function process_svn_repositories()
 
         # Push to final bare repository and remove temp repository.
         echo "- Pushing to new bare repository..." >&2;
-        git remote add bare "$destination/$name.git";
+        git remote add bare "${destination}/${name}.git";
         git config remote.bare.push 'refs/remotes/*:refs/heads/*';
         git push bare;
         # Push the .gitignore commit that resides on master.
         git push bare master:trunk;
-        cd "$pwd";
-        rm -r "$tmp_destination";
+        cd "${pwd}";
+        rm -r "${tmp_destination}";
 
         # Rename Subversion's "trunk" branch to Git's standard "master" branch.
         cd "$destination/$name.git";
@@ -385,6 +393,6 @@ function process_svn_repositories()
 }
 
 process_parameters "$@";
-exit;
 validate_parameters;
+exit;
 process_svn_repositories;

@@ -34,7 +34,7 @@ function print_debug_info()
 function print_usage()
 {
     echo "
-    USAGE: $script --url-file=<filename> --authors_file=<filename>
+    USAGE: $script --url-file=<filename> [--authors_file=<filename>]
 
     For more info, see: $script --help
 ";
@@ -111,14 +111,14 @@ function process_parameters()
                     url-file)       val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); url_file="${val}";;
                     url-file=*)     val="${OPTARG#*=}"; url_file="${val}";;
 
-                    authors-file)    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); authors_file="${val}";;
-                    authors-file=*)  val="${OPTARG#*=}"; authors_file="${val}";;
+                    authors-file)   val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); authors_file="${val}";;
+                    authors-file=*) val="${OPTARG#*=}"; authors_file="${val}";;
 
                     destination)    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); authors_file="${val}";;
                     destination=*)  val="${OPTARG#*=}"; authors_file="${val}";;
 
-                    help )          print_help; exit;;
-                    usage )         print_usage; exit;;
+                    help)           print_help; exit;;
+                    usage)          print_usage; exit;;
 
                     *)
                         if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then

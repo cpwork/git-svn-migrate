@@ -1,14 +1,14 @@
 ABOUT git-svn-migrate
 ---------------------
 
-This is a fork/update of the scripts originally created by John Albin.
-This is mostly just an aggregation of the fixes by others on github.
+These scripts are a fork/update of the scripts originally created by
+John Albin { https://github.com/JohnAlbin/git-svn-migrate }.
 
+This update focuses on aggregating fixes made by others and code cleanup.
 
 ---------------------
 BlueWombat's additions:
 ---------------------
-This fork is based on the scripts by John Albin.
 The original broke when run in MINGW/Git BASH on WIndows.
 This version includes some minor tweaks, that'll make it work flawlessly on Windows.
 ---------------------

@@ -1,7 +1,7 @@
 Version 2.0
 -----------
 - Migrate from inline structure to functions
-- Use BASH's getopts instead of manuially parsing parameters
+- Use BASH's getopts instead of manually parsing parameters
 
 Version 1.x
 -----------

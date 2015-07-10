@@ -194,7 +194,7 @@ function save_authors_transform()
 
 #Actual script execution starts here
 process_parameters "$@";
-print_debug_info; #uncomment to verify parameters passed to script
+#print_debug_info; #uncomment to verify parameters passed to script
 validate_input;
 process_authors;
 save_authors_transform;

@@ -240,6 +240,7 @@ if [[ -e $tmp_destination ]]; then
   echo "Temporary repository location \"$tmp_destination\" already exists. Exiting." >&2;
   exit 1;
 fi
+
 sed -e 's/#.*//; /^[[:space:]]*$/d' $url_file | while read line
 do
   # Check for 2-field format:  Name [tab] URL
@@ -347,4 +348,4 @@ do
   fi
   
   echo "- Conversion completed at $(date)." >&2;
-done < "$url_file"
+done

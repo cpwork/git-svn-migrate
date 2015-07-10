@@ -99,7 +99,7 @@ function process_parameters()
     local OPTIND=1; # Reset is necessary if getopts was used previously in the script.
     local opt;
 
-    while getopts "a:u:d:h-:" opt; do
+    while getopts "ha:u:d:-:" opt; do
         case "${opt}" in
             u)      url_file="${OPTARG}";;
             a)      authors_file="${OPTARG}";;

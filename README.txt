@@ -5,6 +5,8 @@ These scripts are a fork/update of the scripts originally created by
 John Albin { https://github.com/JohnAlbin/git-svn-migrate }.
 
 This update focuses on aggregating fixes made by others and code cleanup.
+All commits in the history should have proper attribution. Thank you to all
+who have contributed their fixes to the community through forks on Github.
 
 ---------------------
 BlueWombat's additions:

@@ -1,3 +1,8 @@
+Version 2.0
+-----------
+- Migrate from inline structure to functions
+- Use BASH's getopts instead of manuially parsing parameters
+
 Version 1.x
 -----------
 - Add option to make shared git repositories

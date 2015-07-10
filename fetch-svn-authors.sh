@@ -3,59 +3,117 @@
 # Copyright 2010 John Albin Wilkins.
 # Available under the GPL v2 license. See LICENSE.txt.
 
+#Heavily modified by Cole Palmer to migrate to functions
+
 script=`basename $0`;
-usage=$(cat <<EOF_USAGE
-USAGE: $script --url-file=<filename> --destination=<filename>
-\n
-\nFor more info, see: $script --help
-EOF_USAGE
-);
-
-help=$(cat <<EOF_HELP
-NAME
-\n\t$script - Retrieves Subversion usernames from a list of
-\n\tURLs for use in a git-svn-migrate (or git-svn) conversion.
-\n
-\nSYNOPSIS
-\n\t$script [options]
-\n
-\nDESCRIPTION
-\n\tThe $script utility creates a list of Subversion committers
-\n\tfrom a list of Subversion URLs from thto Git using the
-\n\tspecified authors list. The url-file parameter is required.
-\n\tIf the destination parameter is not specified the authors
-\n\twill be displayed in standard output.
-\n
-\n\tThe following options are available:
-\n
-\n\t-u=<filename>, -u <filename>,
-\n\t--url-file=<filename>, --url-file <filename>
-\n\t\tSpecify the file containing the Subversion repository list.
-\n
-\n\t-a=<filename>, -a <filename>,
-\n\t--authors-file=[filename], --authors-file [filename]
-\n\t\tSpecify the file containing the authors transformation data.
-\n
-\n\t-d=<folder>, -d <folder,
-\n\t--destination=<folder>, --destination <folder>
-\n\t\tThe directory where the new Git repositories should be
-\n\t\tsaved. Defaults to the current directory.
-\n
-\nBASIC EXAMPLES
-\n\t# Use the long parameter names
-\n\t$script --url-file=my-repository-list.txt --destination=authors-file.txt
-\n
-\n\t# Use short parameter names and redirect standard output
-\n\t$script -u my-repository-list.txt > authors-file.txt
-\n
-\nSEE ALSO
-\n\tgit-svn-migrate.sh
-EOF_HELP
-);
-
 
 # Set defaults for any optional parameters or arguments.
 destination='';
+
+function pause()
+{
+    read -p "
+    ${1}
+    Press ENTER to continue ...
+" -s
+}
+
+function print_debug_info()
+{
+    echo "$script"
+    echo "URL_FILE = $url_file"
+    echo "destination = $destination"
+}
+
+function print_usage()
+{
+    echo "
+    USAGE: $script --url-file=<filename> --destination=<filename>
+
+    For more info, see: $script --help
+"
+}
+
+function print_help()
+{
+    echo "
+    $script - Retrieves Subversion usernames from a list of URLs
+              for use in a git-svn-migrate (or git-svn) conversion.
+
+SYNOPSIS
+    $script [options]
+
+DESCRIPTION
+    The $script utility creates a list of Subversion committers
+    from a list of Subversion URLs from thto Git using the
+    specified authors list. The url-file parameter is required.
+    If the destination parameter is not specified the authors
+    will be displayed in standard output.
+
+    The following options are available:
+
+    -u=<filename>, -u <filename>,
+    --url-file=<filename>, --url-file <filename>
+        Specify the file containing the Subversion repository list.
+
+    -a=<filename>, -a <filename>,
+    --authors-file=[filename], --authors-file [filename]
+        Specify the file containing the authors transformation data.
+
+    -d=<folder>, -d <folder,
+    --destination=<folder>, --destination <folder>
+        The directory where the new Git repositories should be
+        saved. Defaults to the current directory.
+
+BASIC EXAMPLES
+    # Use the long parameter names
+    $script --url-file=my-repository-list.txt --destination=authors-file.txt
+
+    # Use short parameter names and redirect standard output
+    $script -u my-repository-list.txt > authors-file.txt
+
+SEE ALSO
+    git-svn-migrate.sh
+"
+}
+
+function process_parameters()
+{
+    OPTIND=1 # Reset is necessary if getopts was used previously in the script.
+
+    while getopts "u:d:h" opt; do
+      case $opt in
+        u)      url_file=$OPTARG;;
+        d)      destination=$OPTARG;;
+        h)      print_help; exit;;
+        
+        #Handle long style arguments
+        -)  case "${OPTARG}" in
+                url-file)
+                    #url_file=$value;;
+                    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                    echo "Parsing option: '--${OPTARG}', value: '${val}'" >&2;
+                    ;;
+                url-file=*)
+                    #url_file=$value;;
+                    val=${OPTARG#*=}
+                    opt=${OPTARG%=$val}
+                    echo "Parsing option: '--${opt}', value: '${val}'" >&2
+                    ;;
+                *)
+                    if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
+                        echo "Unknown option --${OPTARG}" >&2
+                    fi
+                    ;;
+            esac;;
+
+        \?)     echo "Invalid option: -$OPTARG" >&2;;
+      esac
+    done
+}
+
+process_parameters
+exit;
 
 # Process parameters.
 until [[ -z "$1" ]]; do
@@ -92,15 +150,14 @@ until [[ -z "$1" ]]; do
   esac
 
   case $parameter in
-    u )            url_file=$value;;
     url-file )     url_file=$value;;
-    d )            destination=$value;;
     destination )  destination=$value;;
 
-    h )            echo $help | less >&2; exit;;
-    help )         echo $help | less >&2; exit;;
+    help )         print_help; exit;;
 
-    * )            echo "Unknown option: $option\n$usage" >&2; exit 1;;
+    usage )        print_usage; exit;;
+
+    * )            echo "Unknown option: $option" >&2; print_usage; exit 1;;
   esac
 
   # Remove the processed parameter.

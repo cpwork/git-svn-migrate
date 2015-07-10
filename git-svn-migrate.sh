@@ -3,119 +3,136 @@
 # Copyright 2010-2011 John Albin Wilkins and contributors.
 # Available under the GPL v2 license. See LICENSE.txt.
 
+#Heavily modified by Cole Palmer to migrate to functions
+
 script=`basename $0`;
 dir=`pwd`/`dirname $0`;
-usage=$(cat <<EOF_USAGE
-USAGE: $script --url-file=<filename> --authors-file=<filename> [destination folder]
-\n
-\nFor more info, see: $script --help
-EOF_USAGE
-);
-
-help=$(cat <<EOF_HELP
-NAME
-\n\t$script - Migrates Subversion repositories to Git
-\n
-\nSYNOPSIS
-\n\t$script [options] [arguments]
-\n
-\nDESCRIPTION
-\n\tThe $script utility migrates a list of Subversion
-\n\trepositories to Git using the specified authors list. The
-\n\turl-file and authors-file parameters are required. The
-\n\tdestination folder is optional and can be specified as an
-\n\targument or as a named parameter.
-\n
-\n\tThe following options are available:
-\n
-\n\t-u=<filename>, -u <filename>,
-\n\t--url-file=<filename>, --url-file <filename>
-\n\t\tSpecify the file containing the Subversion repository list.
-\n
-\n\t-a=<filename>, -a <filename>,
-\n\t--authors-file=[filename], --authors-file [filename]
-\n\t\tSpecify the file containing the authors transformation data.
-\n
-\n\t-d=<folder>, -d <folder>,
-\n\t--destination=<folder>, --destination <folder>
-\n\t\tThe directory where the new Git repositories should be
-\n\t\tsaved. Defaults to the current directory.
-\n
-\n\t-i=<filename>, -i <filename>,
-\n\t--ignore-file=<filename>, --ignore-file <filename>
-\n\t\tThe location of a .gitignore file to add to all repositories.
-\n
-\n\t-T=<trunk_subdir>, -T <trunk_subdir>
-\n\t--trunk=<trunk_subdir>, --trunk <trunk_subdir>
-\n\t-t=<tags_subdir>, -t <tags_subdir>
-\n\t--tags=<tags_subdir>, --tags <tags_subdir>
-\n\t-b=<branches_subdir>, -b <branches_subdir>
-\n\t--branches=<branches_subdir>, --branches <branches_subdir>
-\n\t\tThese are optional command-line options for init.
-\n\t\tgit svn --help for more info.
-\n
-\n\t--no-minimize-url
-\n\t\tPass the "--no-minimize-url" parameter to git-svn. See
-\n\t\tgit svn --help for more info.
-\n
-\n\t--quiet
-\n\t\tBy default this script is rather verbose since it outputs each revision
-\n\t\tnumber as it is processed from Subversion. Since conversion can sometimes
-\n\t\ttake hours to complete, this output can be useful. However, this option
-\n\t\twill surpress that output.
-\n
-\n\t--no-metadata
-\n\t\tBy default, all converted log messages will include a line starting with
-\n\t\t"git-svn-id:" which makes it easy to track down old references to
-\n\t\tSubversion revision numbers in existing documentation, bug reports and
-\n\t\tarchives. Use this option to get rid of that data.
-\n\t\tThis option is NOT recommended as it makes it difficult to
-\n\t\ttrack down old references to SVN revision numbers in existing
-\n\t\tdocumentation, bug reports and archives. If you plan to
-\n\t\teventually migrate from SVN to git and are certain about
-\n\t\tdropping SVN history, consider git-filter-branch(1) instead.
-\n\t\tSee git svn --help for a fuller discussion on this option.
-\n
-\n\t--no-stdlayout
-\n\t\tBy default, $script passes the --stdlayout option to
-\n\t\tgit-svn clone. This option suppresses that behavior. See git svn --help
-\n\t\tfor more information.
-\n
-\n\t--shared[=(false|true|umask|group|all|world|everybody|0xxx)]
-\n\t\tSpecify that the generated git repositories are to be shared amongst
-\n\t\tseveral users. See git init --help for more info about this option.
-\n
-\n\tAny additional options are assumed to be git-svn options and will be passed
-\n\talong to that utility directly. Some useful git-svn options are:
-\n\t\t--trunk --tags --branches --no-minimize-url
-\n\tSee git svn --help for more info about its options.
-\n
-=============
-
-\n\t--use-svm-props
-\n\t\tSee git svn --help for more info.
-\n
-\n\t--use-svnsync-props
-\n\t\tSee git svn --help for more info.
-\n
-\nBASIC EXAMPLES
-\n\t# Use the long parameter names
-\n\t$script --url-file=my-repository-list.txt --authors-file=authors-file.txt --destination=/var/git
-\n
-\n\t# Use short parameter names
-\n\t$script -u my-repository-list.txt -a authors-file.txt /var/git
-\n
-\nSEE ALSO
-\n\tfetch-svn-authors.sh
-\n\tsvn-lookup-author.sh
-EOF_HELP
-);
-
 
 # Set defaults for any optional parameters or arguments.
 destination='.';
 gitinit_params='';
 gitsvn_params='';
+
+
+function pause()
+{
+    read -p "
+    ${1}
+    Press ENTER to continue ...
+" -s
+}
+
+function svn-lookup-author()
+{
+	echo "$1 <$1>";
+}
+
+function print_usage()
+{
+    echo "
+    USAGE: $script --url-file=<filename> --authors-file=<filename> [destination folder]
+
+    For more info, see: $script --help
+"
+}
+
+functon print_help()
+{
+    echo "
+    $script - Migrates Subversion repositories to Git
+
+SYNOPSIS
+    $script [options] [arguments]
+
+DESCRIPTION
+    The $script utility migrates a list of Subversion
+    repositories to Git using the specified authors list. The
+    url-file and authors-file parameters are required. The
+    destination folder is optional and can be specified as an
+    argument or as a named parameter.
+
+    The following options are available:
+
+    -u=<filename>, -u <filename>,
+    --url-file=<filename>, --url-file <filename>
+        Specify the file containing the Subversion repository list.
+
+    -a=<filename>, -a <filename>,
+    --authors-file=[filename], --authors-file [filename]
+        Specify the file containing the authors transformation data.
+
+    -d=<folder>, -d <folder>,
+    --destination=<folder>, --destination <folder>
+        The directory where the new Git repositories should be
+        saved. Defaults to the current directory.
+
+    -i=<filename>, -i <filename>,
+    --ignore-file=<filename>, --ignore-file <filename>
+        The location of a .gitignore file to add to all repositories.
+
+    -T=<trunk_subdir>, -T <trunk_subdir>
+    --trunk=<trunk_subdir>, --trunk <trunk_subdir>
+    -t=<tags_subdir>, -t <tags_subdir>
+    --tags=<tags_subdir>, --tags <tags_subdir>
+    -b=<branches_subdir>, -b <branches_subdir>
+    --branches=<branches_subdir>, --branches <branches_subdir>
+        These are optional command-line options for init.
+        git svn --help for more info.
+
+    --no-minimize-url
+        Pass the "--no-minimize-url" parameter to git-svn. See
+        git svn --help for more info.
+
+    --quiet
+        By default this script is rather verbose since it outputs each revision
+        number as it is processed from Subversion. Since conversion can sometimes
+        take hours to complete, this output can be useful. However, this option
+        will surpress that output.
+
+    --no-metadata
+        By default, all converted log messages will include a line starting with
+        "git-svn-id:" which makes it easy to track down old references to
+        Subversion revision numbers in existing documentation, bug reports and
+        archives. Use this option to get rid of that data.
+        This option is NOT recommended as it makes it difficult to
+        track down old references to SVN revision numbers in existing
+        documentation, bug reports and archives. If you plan to
+        eventually migrate from SVN to git and are certain about
+        dropping SVN history, consider git-filter-branch(1) instead.
+        See git svn --help for a fuller discussion on this option.
+
+    --no-stdlayout
+        By default, $script passes the --stdlayout option to
+        git-svn clone. This option suppresses that behavior. See git svn --help
+        for more information.
+
+    --shared[=(false|true|umask|group|all|world|everybody|0xxx)]
+        Specify that the generated git repositories are to be shared amongst
+        several users. See git init --help for more info about this option.
+
+    Any additional options are assumed to be git-svn options and will be passed
+    along to that utility directly. Some useful git-svn options are:
+        --trunk --tags --branches --no-minimize-url
+    See git svn --help for more info about its options.
+
+    --use-svm-props
+        See git svn --help for more info.
+
+    --use-svnsync-props
+        See git svn --help for more info.
+
+BASIC EXAMPLES
+    # Use the long parameter names
+    $script --url-file=my-repository-list.txt --authors-file=authors-file.txt --destination=/var/git
+
+    # Use short parameter names
+    $script -u my-repository-list.txt -a authors-file.txt /var/git
+
+SEE ALSO
+    fetch-svn-authors.sh
+"
+}
+
 
 # Process parameters.
 until [[ -z "$1" ]]; do
@@ -173,8 +190,10 @@ until [[ -z "$1" ]]; do
                       fi
                       ;;
 
-    h )               echo -e $help | less >&2; exit;;
-    help )            echo -e $help | less >&2; exit;;
+    h )            print_help; exit;;
+    help )         print_help; exit;;
+
+    usage )        print_usage; exit;;
 
     * ) # Pass any unknown parameters to git-svn directly.
         if [[ $value == '' ]]; then
@@ -189,6 +208,8 @@ until [[ -z "$1" ]]; do
   # Remove the processed parameter.
   shift;
 done
+
+exit
 
 # Check for required parameters.
 if [[ $url_file == '' || $authors_file == '' ]]; then

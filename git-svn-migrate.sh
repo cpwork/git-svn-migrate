@@ -16,6 +16,7 @@ ignore_file='';
 gitinit_params='';
 gitsvn_params='';
 no_stdlayout='';
+is_quiet=''
 
 
 function pause()
@@ -24,11 +25,6 @@ function pause()
     ${1}
     Press ENTER to continue ...
 " -s
-}
-
-function svn-lookup-author()
-{
-	echo "$1 <$1>";
 }
 
 function print_usage()
@@ -67,7 +63,7 @@ DESCRIPTION
         The directory where the new Git repositories should be
         saved. Defaults to the current directory.
 
-     -i <filename>, --ignore-file=<filename>, --ignore-file <filename>
+    -i <filename>, --ignore-file=<filename>, --ignore-file <filename>
         The location of a .gitignore file to add to all repositories.
 
     -T <trunk_subdir> --trunk=<trunk_subdir>, --trunk <trunk_subdir>
@@ -154,7 +150,7 @@ function process_parameters()
     local OPTIND=1; # Reset is necessary if getopts was used previously in the script.
     local opt;
 
-    while getopts "ha:u:d:-:i:T:t:b:" opt; do
+    while getopts "hvqsa:u:d:-:i:T:t:b:" opt; do
         case "${opt}" in
             u)      url_file="${OPTARG}";;
             a)      authors_file="${OPTARG}";;
@@ -164,6 +160,8 @@ function process_parameters()
             t)      gitsvn_params="${gitsvn_params} --tags=${OPTARG}"
             b)      gitsvn_params="${gitsvn_params} --branches=${OPTARG}"
             s)      no_stdlayout='';;
+            q)      is_quiet="true";;
+            v)      is_quiet='';;
             h)      print_help; exit;;
 
             #Handle long style arguments
@@ -195,6 +193,8 @@ function process_parameters()
                     use-svm-props)      gitsvn_params="$gitsvn_params --use-svm-props";;
                     use-svnsync-props)  gitsvn_params="$gitsvn_params --use-svnsync-props";;
                     no-stdlayout)       no_stdlayout="true";;
+                    quiet)              is_quiet="true";;
+                    verbose)            is_quiet='';;
 
                     shared)             val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ));
                                         if [[ "${val}" == '' ]]; then
@@ -311,7 +311,7 @@ function process_svn_repositories()
 
         # Process each Subversion URL.
         echo >&2;
-        echo "At ${date}..." >&2;
+        echo "At $(date)..." >&2;
         echo "Processing \"${name}\" repository at $url..." >&2;
         echo "Description: ${name}" >&2;
 
@@ -324,10 +324,10 @@ function process_svn_repositories()
         # Clone the original Subversion repository to a temp repository.
         cd "${pwd}";
         echo "- Cloning repository..." >&2;
-        git_svn_clone="git svn clone \"${url}\" -A \"${authors_file}\" --authors-prog=\"$dir/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=".gitkeep"";
+        git_svn_clone="git svn clone \"${url}\" -A \"${authors_file}\" --authors-prog=\"${dir}/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=\".gitkeep\"";
 
-        if [[ $non_standard_layout == '' ]]; then
-        	if [[ -z $no_stdlayout ]]; then
+        if [[ "${non_standard_layout}" == '' ]]; then
+        	if [[ -z "${no_stdlayout}" ]]; then
         	   git_svn_clone="${git_svn_clone} --stdlayout";
         	fi
         else
@@ -335,7 +335,11 @@ function process_svn_repositories()
         	git_svn_clone="${git_svn_clone} --trunk=/${layout_trunk} --branches=/${layout_branches} --tags=/${layout_tags}";
         fi
 
-        git_svn_clone="${git_svn_clone} --quiet ${gitsvn_params} ${tmp_destination}";
+        if [[ "${is_quiet}" != '' ]]; then
+            git_svn_clone="${git_svn_clone} --quiet";
+        fi            
+
+        git_svn_clone="${git_svn_clone} ${gitsvn_params} ${tmp_destination}";
         $git_svn_clone;
 
         # Create .gitignore file.
@@ -361,14 +365,14 @@ function process_svn_repositories()
         rm -r "${tmp_destination}";
 
         # Rename Subversion's "trunk" branch to Git's standard "master" branch.
-        cd "$destination/$name.git";
+        cd "${destination}/${name}.git";
         git branch -M trunk master;
 
         # Remove bogus branches of the form "name@REV".
         git for-each-ref --format='%(refname)' refs/heads | grep '@[0-9][0-9]*' | cut -d / -f 3- |
         while read ref
         do
-            git branch -D "$ref";
+            git branch -D "${ref}";
         done
 
         # Convert git-svn tag branches to proper tags.
@@ -376,8 +380,8 @@ function process_svn_repositories()
         git for-each-ref --format='%(refname)' refs/heads/tags | cut -d / -f 4 |
         while read ref
         do
-            git tag -a "$ref" -m "Convert \"$ref\" to a proper git tag." "refs/heads/tags/$ref";
-            git branch -D "tags/$ref";
+            git tag -a "${ref}" -m "Convert \"${ref}\" to a proper git tag." "refs/heads/tags/${ref}";
+            git branch -D "tags/${ref}";
         done
 
         #this is the enhancements done by Shan Ul Haq. Following code will read the remote provided in the URL list

@@ -4,6 +4,7 @@
 # Available under the GPL v2 license. See LICENSE.txt.
 
 #Heavily modified by Cole Palmer to migrate to functions
+#and use BASH's builtin getopts.
 
 script=`basename $0`;
 dir=`pwd`/`dirname $0`;
@@ -156,9 +157,9 @@ function process_parameters()
             a)      authors_file="${OPTARG}";;
             d)      destination="${OPTARG}";;
             i)      ignore_file="${OPTARG}";;
-            T)      gitsvn_params="${gitsvn_params} --trunk=${OPTARG}"
-            t)      gitsvn_params="${gitsvn_params} --tags=${OPTARG}"
-            b)      gitsvn_params="${gitsvn_params} --branches=${OPTARG}"
+            T)      gitsvn_params="${gitsvn_params} --trunk=${OPTARG}";;
+            t)      gitsvn_params="${gitsvn_params} --tags=${OPTARG}";;
+            b)      gitsvn_params="${gitsvn_params} --branches=${OPTARG}";;
             s)      no_stdlayout='';;
             q)      is_quiet="true";;
             v)      is_quiet='';;
@@ -176,16 +177,16 @@ function process_parameters()
                     destination=*)      val="${OPTARG#*=}"; destination="${val}";;
 
                     ignore-file)        val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); ignore_file="${val}";;
-                    ignore-file=*)      val="${OPTARG#*=}"; ignore_file="${val}";
+                    ignore-file=*)      val="${OPTARG#*=}"; ignore_file="${val}";;
 
                     trunk)              val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); gitsvn_params="${gitsvn_params} --trunk=${OPTARG}";;
-                    trunk=*)            val="${OPTARG#*=}"; gitsvn_params="${gitsvn_params} --trunk=${OPTARG}";
+                    trunk=*)            val="${OPTARG#*=}"; gitsvn_params="${gitsvn_params} --trunk=${OPTARG}";;
 
                     tags)               val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); gitsvn_params="${gitsvn_params} --tags=${OPTARG}";;
-                    tags=*)             val="${OPTARG#*=}"; gitsvn_params="${gitsvn_params} --tags=${OPTARG}";
+                    tags=*)             val="${OPTARG#*=}"; gitsvn_params="${gitsvn_params} --tags=${OPTARG}";;
 
                     branches)           val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); gitsvn_params="${gitsvn_params} --branches=${OPTARG}";;
-                    branches=*)         val="${OPTARG#*=}"; gitsvn_params="${gitsvn_params} --branches=${OPTARG}";
+                    branches=*)         val="${OPTARG#*=}"; gitsvn_params="${gitsvn_params} --branches=${OPTARG}";;
 
                     no-minimize-url)    gitsvn_params="$gitsvn_params --no-minimize-url";;
 
@@ -271,7 +272,7 @@ function process_svn_repositories()
 {
     # Process each URL in the repository list.
     pwd=`pwd`;
-    tmp_destination="`mktemp --directory --dry-run ${pwd}/tmp-git-repoXXXXXXXX`";
+    tmp_destination="`mktemp --directory --dry-run ${pwd}/tmp-git-repo_XXXXXXXX`";
     mkdir -p "${destination}";
     destination=`cd "${destination}"; pwd`; #Absolute path.
 
@@ -318,7 +319,12 @@ function process_svn_repositories()
         # Init the final bare repository.
         mkdir "${destination}/${name}.git";
         cd "${destination}/${name}.git";
-        git init --bare "${gitinit_params}";
+
+        if [[ "${gitinit_params}" != '' ]]; then
+            git init --bare "${gitinit_params}";
+        else
+            git init --bare;
+        fi
         git symbolic-ref HEAD refs/heads/trunk;
 
         # Clone the original Subversion repository to a temp repository.
@@ -327,12 +333,12 @@ function process_svn_repositories()
         git_svn_clone="git svn clone \"${url}\" -A \"${authors_file}\" --authors-prog=\"${dir}/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=\".gitkeep\"";
 
         if [[ "${non_standard_layout}" == '' ]]; then
-        	if [[ -z "${no_stdlayout}" ]]; then
-        	   git_svn_clone="${git_svn_clone} --stdlayout";
-        	fi
+          	if [[ -z "${no_stdlayout}" ]]; then
+                git_svn_clone="${git_svn_clone} --stdlayout";
+          	fi
         else
-        	#if non-standard svn repo layout parameters are provided, then use those
-        	git_svn_clone="${git_svn_clone} --trunk=/${layout_trunk} --branches=/${layout_branches} --tags=/${layout_tags}";
+        	  #if non-standard svn repo layout parameters are provided, then use those
+        	  git_svn_clone="${git_svn_clone} --trunk=/${layout_trunk} --branches=/${layout_branches} --tags=/${layout_tags}";
         fi
 
         if [[ "${is_quiet}" != '' ]]; then
@@ -398,5 +404,4 @@ function process_svn_repositories()
 
 process_parameters "$@";
 validate_parameters;
-exit;
 process_svn_repositories;

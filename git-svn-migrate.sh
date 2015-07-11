@@ -359,7 +359,7 @@ function process_svn_repositories()
         fi            
 
         git_svn_clone="${git_svn_clone} ${gitsvn_params} ${tmp_destination}";
-        $git_svn_clone;
+        eval "$git_svn_clone";
 
         # Create .gitignore file.
         echo "- Converting svn:ignore properties into a .gitignore file..." >&2;

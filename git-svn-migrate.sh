@@ -18,6 +18,7 @@ gitinit_params='';
 gitsvn_params='';
 no_stdlayout='';
 is_quiet=''
+remote_prefix="origin/"
 
 
 function pause()
@@ -72,6 +73,11 @@ DESCRIPTION
     -b <branches_subdir>, --branches=<branches_subdir>, --branches <branches_subdir>
         These are optional command-line options for init.
         git svn --help for more info.
+ 
+    -p <\"prefix\">, --prefix=<\"prefix\">, --prefix <\"prefix\">
+        Set the remote references prefix for git svn. Defaults to
+        \"origin/\" to force old versions of git to match git 2.0+
+        behavior. See git svn --help for more information.
 
     --no-minimize-url
         Pass the '--no-minimize-url' parameter to git-svn. See
@@ -161,6 +167,7 @@ function process_parameters()
             t)      gitsvn_params="${gitsvn_params} --tags=${OPTARG}";;
             b)      gitsvn_params="${gitsvn_params} --branches=${OPTARG}";;
             s)      no_stdlayout='';;
+            p)      remote_prefix="${OPTARG}";;
             q)      is_quiet="true";;
             v)      is_quiet='';;
             h)      print_help; exit;;
@@ -178,6 +185,9 @@ function process_parameters()
 
                     ignore-file)        val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); ignore_file="${val}";;
                     ignore-file=*)      val="${OPTARG#*=}"; ignore_file="${val}";;
+
+                    prefix)        val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); remote_prefix="${val}";;
+                    prefix=*)      val="${OPTARG#*=}"; remote_prefix="${val}";;
 
                     trunk)              val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 )); gitsvn_params="${gitsvn_params} --trunk=${OPTARG}";;
                     trunk=*)            val="${OPTARG#*=}"; gitsvn_params="${gitsvn_params} --trunk=${OPTARG}";;
@@ -275,8 +285,8 @@ function validate_parameters()
 function process_svn_repositories()
 {
     # Process each URL in the repository list.
-    pwd=`pwd`;
-    tmp_destination="`mktemp --directory --dry-run ${pwd}/tmp-git-repo_XXXXXXXX`";
+    working_dir=`pwd`;
+    tmp_destination="`mktemp --directory --dry-run ${working_dir}/tmp-git-repo_XXXXXXXX`";
     mkdir -p "${destination}";
     destination=`cd "${destination}"; pwd`; #Absolute path.
 
@@ -313,7 +323,6 @@ function process_svn_repositories()
             name=`basename $url`;
         fi
 
-
         # Process each Subversion URL.
         echo >&2;
         echo "At $(date)..." >&2;
@@ -332,9 +341,9 @@ function process_svn_repositories()
         git symbolic-ref HEAD refs/heads/trunk;
 
         # Clone the original Subversion repository to a temp repository.
-        cd "${pwd}";
+        cd "${working_dir}";
         echo "- Cloning repository..." >&2;
-        git_svn_clone="git svn clone \"${url}\" -A \"${authors_file}\" --authors-prog=\"${dir}/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=\".gitkeep\"";
+        git_svn_clone="git svn clone \"${url}\" --prefix=\"${remote_prefix}\" -A \"${authors_file}\" --authors-prog=\"${dir}/svn-lookup-author.sh\"  --preserve-empty-dirs --placeholder-filename=\".gitkeep\"";
 
         if [[ "${non_standard_layout}" == '' ]]; then
           	if [[ -z "${no_stdlayout}" ]]; then
@@ -371,7 +380,7 @@ function process_svn_repositories()
         git push bare;
         # Push the .gitignore commit that resides on master.
         git push bare master:trunk;
-        cd "${pwd}";
+        cd "${working_dir}";
         rm -r "${tmp_destination}";
 
         # Rename Subversion's "trunk" branch to Git's standard "master" branch.

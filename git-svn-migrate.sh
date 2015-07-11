@@ -254,6 +254,10 @@ function validate_parameters()
         exit 1;
     fi
 
+    #Change to absolute paths
+    url_file="${PWD}/${url_file}";
+    authors_file="${PWD}/${authors_file}";
+
     # Check for valid files.
     if [[ ! -f "${url_file}" ]]; then
         echo "Specified URL file \"${url_file}\" does not exist or is not a file." >&2;
@@ -317,7 +321,7 @@ function process_svn_repositories()
         echo "Description: ${name}" >&2;
 
         # Init the final bare repository.
-        mkdir "${destination}/${name}.git";
+        mkdir -p "${destination}/${name}.git";
         cd "${destination}/${name}.git";
 
         if [[ "${gitinit_params}" != '' ]]; then

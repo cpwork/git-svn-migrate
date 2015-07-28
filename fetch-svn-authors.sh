@@ -168,7 +168,7 @@ function process_authors()
         url=`echo $line | awk '{print $2}'`;
         # Check for simple 1-field format:  URL
         if [[ "${url}" == '' ]]; then
-        url="{$name}";
+        url="${name}";
         name=`basename ${url}`;
         fi
         # Process the log of each Subversion URL.
